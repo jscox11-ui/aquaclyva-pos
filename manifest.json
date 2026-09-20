@@ -1,0 +1,9 @@
+{
+  "name":"AquaClyva POS",
+  "short_name":"AquaClyva",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#f4f7fa",
+  "theme_color":"#0b2d4d",
+  "icons":[]
+}

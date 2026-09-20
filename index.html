@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2d4d">
+<title>AquaClyva POS</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--nav:#0b2d4d;--blue:#1479c9;--cyan:#28a9e0;--bg:#f4f7fa;--card:#fff;--text:#152536;--muted:#6b7a89;--ok:#1c9b68;--danger:#d84b4b;--line:#dfe7ee}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);padding-bottom:82px}
+header{background:linear-gradient(135deg,var(--nav),#125b8d);color:white;padding:calc(env(safe-area-inset-top) + 16px) 18px 18px;position:sticky;top:0;z-index:5;box-shadow:0 4px 16px #0002}
+.brand{font-size:21px;font-weight:800}.sub{opacity:.8;font-size:12px;margin-top:2px}
+main{max-width:900px;margin:auto;padding:16px}.screen{display:none}.screen.active{display:block}
+h1{font-size:25px;margin:5px 0 16px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:0 5px 18px #17365d0b}
+.kpi{font-size:24px;font-weight:800;margin-top:5px}.label{font-size:12px;color:var(--muted)}
+button{border:0;border-radius:14px;padding:14px 15px;font-weight:750;font-size:15px;background:var(--blue);color:white;cursor:pointer}
+button.secondary{background:#e9f1f7;color:var(--nav)}button.danger{background:var(--danger)}button.ok{background:var(--ok)}
+.bigbtn{min-height:92px;text-align:left}.bigbtn b{display:block;font-size:18px}.bigbtn span{font-size:12px;opacity:.8}
+.row{display:flex;gap:9px;align-items:center}.row>*{flex:1}
+input,select{width:100%;padding:13px;border:1px solid #cdd9e2;border-radius:12px;background:white;font-size:16px;outline:none}input:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #28a9e022}
+.form{display:grid;gap:11px}.sectiontitle{font-weight:800;margin:4px 0}
+.sale-total{font-size:34px;font-weight:900;color:var(--nav)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 7px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted);font-size:11px;text-transform:uppercase}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:8px max(8px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);z-index:10}.bottom button{background:transparent;color:#647483;padding:7px 2px;font-size:11px;border-radius:10px}.bottom button.active{color:var(--blue);background:#eaf5fc}.ico{font-size:20px;display:block;margin-bottom:2px}
+.notice{padding:12px;border-radius:12px;background:#eaf5fc;color:#194e70;font-size:13px}
+.hidden{display:none!important}.right{text-align:right}.empty{text-align:center;padding:30px;color:var(--muted)}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}.bottom{max-width:900px;left:50%;transform:translateX(-50%);border-radius:18px 18px 0 0}.form.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><div class="brand">AquaClyva POS</div><div class="sub">PLANTA PURIFICADORA · San Miguel</div></header>
+<main>
+<section id="inicio" class="screen active">
+<h1>Resumen</h1>
+<div class="grid">
+<div class="card"><div class="label">Ventas de hoy</div><div id="kVentas" class="kpi">$0.00</div></div>
+<div class="card"><div class="label">Egresos de hoy</div><div id="kEgresos" class="kpi">$0.00</div></div>
+<div class="card"><div class="label">Fondo de caja</div><div class="kpi">$1,000.00</div></div>
+<div class="card"><div class="label">Retiro estimado</div><div id="kRetiro" class="kpi">$0.00</div></div>
+</div>
+<div style="height:12px"></div>
+<div class="grid">
+<button class="bigbtn" onclick="go('venta')"><b>🧾 Nueva venta</b><span>Registrar y cobrar</span></button>
+<button class="bigbtn" onclick="go('productos')"><b>📦 Productos</b><span>Precios y catálogo</span></button>
+<button class="bigbtn" onclick="go('inventario')"><b>📊 Inventario</b><span>Existencias</span></button>
+<button class="bigbtn" onclick="go('caja')"><b>💰 Caja</b><span>Corte y fondo fijo</span></button>
+</div>
+</section>
+
+<section id="venta" class="screen">
+<h1>Nueva venta</h1>
+<div class="card form">
+<div class="form two">
+<div><div class="label">Tipo de cliente</div><select id="tipo"><option>Público</option><option>Distribuidor</option></select></div>
+<div><div class="label">Producto</div><select id="prod"></select></div>
+</div>
+<div><div class="label">Cantidad</div><input id="qty" type="number" min="1" value="1" inputmode="numeric"></div>
+<div class="notice" id="promo">Promoción: por cada 15 garrafones cobrados se bonifica 1.</div>
+<div class="row"><div><div class="label">Total</div><div id="total" class="sale-total">$0.00</div></div><div><div class="label">Efectivo recibido</div><input id="cash" type="number" min="0" value="0" inputmode="decimal"></div></div>
+<div class="row"><div><div class="label">Cambio</div><div id="change" class="sale-total">$0.00</div></div><button class="ok" onclick="cobrar()">COBRAR</button></div>
+</div>
+<div style="height:12px"></div><div class="card"><div class="sectiontitle">Últimas ventas</div><div id="lastSales"></div></div>
+</section>
+
+<section id="productos" class="screen"><h1>Productos</h1><div id="productList" class="grid"></div></section>
+
+<section id="inventario" class="screen"><h1>Inventario</h1><div class="card"><div class="notice">Escribe las existencias. Los datos se guardan en este dispositivo.</div><div id="stockList"></div></div></section>
+
+<section id="egresos" class="screen"><h1>Egresos</h1><div class="card form"><input id="egConcept" placeholder="Concepto"><input id="egAmount" type="number" min="0" placeholder="Monto" inputmode="decimal"><button onclick="addExpense()">Registrar egreso</button></div><div style="height:12px"></div><div class="card"><div id="expenseList"></div></div></section>
+
+<section id="caja" class="screen"><h1>Corte de caja</h1><div class="grid">
+<div class="card"><div class="label">Fondo obligatorio</div><div class="kpi">$1,000</div></div>
+<div class="card"><div class="label">Ventas acumuladas</div><div id="cVentas" class="kpi">$0</div></div>
+<div class="card"><div class="label">Egresos acumulados</div><div id="cEgresos" class="kpi">$0</div></div>
+<div class="card"><div class="label">Efectivo esperado</div><div id="cEsperado" class="kpi">$0</div></div>
+</div>
+<div style="height:12px"></div><div class="card form"><div class="label">Efectivo contado al cerrar</div><input id="counted" type="number" min="0" placeholder="Ej. 3500" inputmode="decimal"><div id="cResult" class="notice">Captura el efectivo contado.</div><button class="ok" onclick="corte()">Calcular corte</button></div>
+</section>
+
+<section id="reportes" class="screen"><h1>Reportes</h1><div class="card"><div class="grid">
+<div><div class="label">Ventas</div><div id="rVentas" class="kpi">$0</div></div>
+<div><div class="label">Egresos</div><div id="rEgresos" class="kpi">$0</div></div>
+<div><div class="label">Neto</div><div id="rNeto" class="kpi">$0</div></div>
+<div><div class="label">Operaciones</div><div id="rOps" class="kpi">0</div></div>
+</div></div></section>
+</main>
+<nav class="bottom">
+<button onclick="go('inicio')" data-nav="inicio"><span class="ico">⌂</span>Inicio</button>
+<button onclick="go('venta')" data-nav="venta"><span class="ico">🧾</span>Venta</button>
+<button onclick="go('inventario')" data-nav="inventario"><span class="ico">📦</span>Stock</button>
+<button onclick="go('egresos')" data-nav="egresos"><span class="ico">💸</span>Egresos</button>
+<button onclick="go('caja')" data-nav="caja"><span class="ico">💰</span>Caja</button>
+</nav>
+<script>
+const KEY='aquaclyva_pos_v1';
+const defaultProducts=[
+{id:1,name:'Garrafón relleno',public:10,dist:7,stock:0},
+{id:2,name:'Botella 500 ml',public:0,dist:0,stock:0},
+{id:3,name:'Hielo',public:0,dist:0,stock:0},
+{id:4,name:'Garrafón nuevo',public:100,dist:100,stock:0}
+];
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{products:defaultProducts,sales:[],expenses:[]};
+function save(){localStorage.setItem(KEY,JSON.stringify(db));}
+function money(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n||0)}
+function today(x){return new Date(x).toDateString()===new Date().toDateString()}
+function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===id));render();scrollTo(0,0)}
+function render(){
+ const tv=db.sales.filter(x=>today(x.date)).reduce((a,x)=>a+x.total,0), te=db.expenses.filter(x=>today(x.date)).reduce((a,x)=>a+x.amount,0);
+ document.getElementById('kVentas').textContent=money(tv);document.getElementById('kEgresos').textContent=money(te);document.getElementById('kRetiro').textContent=money(Math.max(0,1000+tv-te-1000));
+ document.getElementById('cVentas').textContent=money(db.sales.reduce((a,x)=>a+x.total,0));document.getElementById('cEgresos').textContent=money(db.expenses.reduce((a,x)=>a+x.amount,0));
+ document.getElementById('cEsperado').textContent=money(1000+db.sales.reduce((a,x)=>a+x.total,0)-db.expenses.reduce((a,x)=>a+x.amount,0));
+ document.getElementById('rVentas').textContent=money(db.sales.reduce((a,x)=>a+x.total,0));document.getElementById('rEgresos').textContent=money(db.expenses.reduce((a,x)=>a+x.amount,0));document.getElementById('rNeto').textContent=money(db.sales.reduce((a,x)=>a+x.total,0)-db.expenses.reduce((a,x)=>a+x.amount,0));document.getElementById('rOps').textContent=db.sales.length;
+ const prod=document.getElementById('prod'); if(prod){prod.innerHTML=db.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); calc()}
+ document.getElementById('productList').innerHTML=db.products.map(p=>`<div class="card"><div class="label">${p.name}</div><div class="kpi">${money(p.public)}</div><div class="label">Distribuidor: ${money(p.dist)}</div></div>`).join('');
+ document.getElementById('stockList').innerHTML=db.products.map((p,i)=>`<div class="row" style="margin:10px 0"><div>${p.name}</div><input type="number" value="${p.stock}" inputmode="numeric" onchange="db.products[${i}].stock=Number(this.value);save()" ></div>`).join('');
+ document.getElementById('expenseList').innerHTML=db.expenses.slice(-10).reverse().map(x=>`<div class="row"><div>${new Date(x.date).toLocaleString('es-MX')}<br>${x.concept}</div><b>${money(x.amount)}</b></div>`).join('')||'<div class="empty">Sin egresos</div>';
+ document.getElementById('lastSales').innerHTML=db.sales.slice(-8).reverse().map(x=>`<div class="row"><div>${new Date(x.date).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} · ${x.product}</div><b>${money(x.total)}</b></div>`).join('')||'<div class="empty">Sin ventas todavía</div>';
+}
+function calc(){const p=db.products.find(x=>x.id==document.getElementById('prod').value)||db.products[0];const q=Number(document.getElementById('qty').value)||0;const type=document.getElementById('tipo').value;const price=type==='Distribuidor'?p.dist:p.public;const free=(p.name==='Garrafón relleno'?Math.floor(q/15):0);const total=Math.max(0,q-free)*price;document.getElementById('total').textContent=money(total);document.getElementById('change').textContent=money(Math.max(0,(Number(document.getElementById('cash').value)||0)-total));document.getElementById('promo').textContent=p.name==='Garrafón relleno'?`Promoción: ${free} bonificado(s). Se cobran ${Math.max(0,q-free)} y se entregan ${q+free}.`:'Sin promoción configurada para este producto.'}
+function cobrar(){const p=db.products.find(x=>x.id==document.getElementById('prod').value);const q=Number(document.getElementById('qty').value)||0;const type=document.getElementById('tipo').value;const price=type==='Distribuidor'?p.dist:p.public;const free=p.name==='Garrafón relleno'?Math.floor(q/15):0;const total=Math.max(0,q-free)*price;const cash=Number(document.getElementById('cash').value)||0;if(!q||cash<total){alert('Revisa cantidad y efectivo recibido.');return}db.sales.push({date:new Date().toISOString(),type,product:p.name,qty:q,free,total,cash,change:cash-total});p.stock-=q+free;save();alert('Venta registrada correctamente.');document.getElementById('qty').value=1;document.getElementById('cash').value=0;render()}
+function addExpense(){const c=document.getElementById('egConcept').value.trim(),a=Number(document.getElementById('egAmount').value);if(!c||!a){alert('Escribe concepto y monto.');return}db.expenses.push({date:new Date().toISOString(),concept:c,amount:a});save();document.getElementById('egConcept').value='';document.getElementById('egAmount').value='';render();alert('Egreso registrado.')}
+function corte(){const counted=Number(document.getElementById('counted').value);const expected=1000+db.sales.reduce((a,x)=>a+x.total,0)-db.expenses.reduce((a,x)=>a+x.amount,0);const diff=counted-expected;const retiro=Math.max(0,counted-1000);document.getElementById('cResult').innerHTML=`Efectivo esperado: <b>${money(expected)}</b><br>Fondo que debe quedar: <b>${money(1000)}</b><br>Retiro: <b>${money(retiro)}</b><br>Diferencia: <b>${money(diff)}</b><br><br>${diff===0?'✅ CORTE CUADRADO':'⚠️ REVISAR DIFERENCIA'}`}
+['prod','tipo','qty','cash'].forEach(id=>document.getElementById(id).addEventListener('input',calc));
+render();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body></html>
