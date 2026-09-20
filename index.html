@@ -42,6 +42,7 @@ input:focus,select:focus{border-color:#22acd3;box-shadow:0 0 0 4px #22acd322}.fo
 <button class="big" onclick="go('egresos')">💸 Egresos<span>Gastos del día</span></button>
 <button class="big" onclick="go('caja')">🏦 Caja<span>Fondo fijo $1,000</span></button>
 <button class="big" onclick="go('reportes')">📊 Reportes<span>Totales y productos</span></button>
+<button class="big" onclick="cerrarDia()">🌙 Cerrar día<span>Guardar y comenzar nuevo día</span></button>
 </div>
 <div class="card"><b>🧴 Productos vendidos hoy</b><div class="grid" style="margin-top:10px">
 <div><div class="label">💧 Garrafones</div><div id="garHoy" class="kpi">0</div></div>
@@ -56,10 +57,12 @@ input:focus,select:focus{border-color:#22acd3;box-shadow:0 0 0 4px #22acd322}.fo
 <div class="card form">
 <div class="two"><div><div class="label">Tipo de cliente</div><select id="tipo"><option value="publico">🏠 Público · $10</option><option value="dist">🚛 Distribuidor · $7</option></select></div>
 <div><div class="label">Producto</div><select id="producto"><option value="gar">💧 Garrafón relleno</option><option value="bot">🧴 Botella 500 ml</option><option value="hielo">🧊 Bolsa de hielo</option><option value="nuevo">🫙 Garrafón nuevo</option></select></div></div>
-<div><div class="label">Cantidad</div><input id="cantidad" type="number" min="1" value="1"></div>
-<div id="promo" class="notice">💧 Promoción 15 + 1 en garrafones.</div>
+<div><div class="label">Cantidad de garrafones que trae</div><input id="cantidad" type="number" min="1" value="1"></div>
+<div id="consumoBox" style="display:none"><div class="label">Garrafones para consumo de su casa (gratis)</div><input id="consumo" type="number" min="0" value="0"></div>
+<div id="promo" class="notice">💧 Promoción: por cada 15 garrafones, 1 se regala; se cobran 14.</div>
 <div class="row"><div><div class="label">Total</div><div id="total" class="total">$0</div></div><div><div class="label">Efectivo</div><input id="efectivo" type="number" min="0" value="0"></div></div>
 <div class="row"><div><div class="label">Cambio</div><div id="cambio" class="total">$0</div></div><button class="ok" onclick="vender()">💧 COBRAR</button></div>
+<button class="secondary" onclick="limpiarVenta()">🧹 Limpiar casillas</button>
 </div>
 <div class="card"><b>🧾 Últimas ventas</b><div id="ventasLista"></div></div>
 </section>
@@ -78,7 +81,7 @@ input:focus,select:focus{border-color:#22acd3;box-shadow:0 0 0 4px #22acd322}.fo
 
 <section id="caja" class="screen"><h1>🏦 Corte de caja</h1><div class="card"><div class="notice">El fondo fijo debe permanecer en <b>$1,000</b>.</div><div class="grid" style="margin-top:12px"><div><div class="label">Ventas</div><div id="cVentas" class="kpi">$0</div></div><div><div class="label">Egresos</div><div id="cEgresos" class="kpi">$0</div></div><div><div class="label">Sueldo</div><div id="cSueldo" class="kpi">$0</div></div><div><div class="label">Retiro esperado</div><div id="cRetiro" class="kpi">$0</div></div></div><hr><div class="label">Efectivo contado al cierre</div><input id="contado" type="number" min="0" placeholder="Ej. 3500"><div id="diferencia" class="notice" style="margin-top:10px">Captura el efectivo contado.</div><button class="ok" style="margin-top:10px;width:100%" onclick="corte()">🔒 REGISTRAR CORTE</button></div></section>
 
-<section id="reportes" class="screen"><h1>📊 Reportes</h1><div class="card"><b>💰 Resumen</b><div id="reportesResumen"></div></div><div class="card"><b>📦 Cantidades vendidas</b><div id="cantidades"></div></div><button class="danger" style="width:100%" onclick="borrarTodo()">⚠️ Borrar todos los datos</button></section>
+<section id="reportes" class="screen"><h1>📊 Reportes</h1><div class="card"><b>💰 Resumen</b><div id="reportesResumen"></div></div><div class="card"><b>📦 Cantidades vendidas</b><div id="cantidades"></div></div><div class="card"><b>🕘 Historial de días</b><div id="historialDias"></div></div><button class="danger" style="width:100%" onclick="borrarTodo()">⚠️ Borrar todos los datos</button></section>
 </main>
 
 <nav class="bottom">
@@ -92,32 +95,72 @@ input:focus,select:focus{border-color:#22acd3;box-shadow:0 0 0 4px #22acd322}.fo
 <script>
 const KEY='aquaclyva_pos_profesional_v1';
 const money=n=>'$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-const today=()=>new Date().toISOString().slice(0,10);
+const nowISO=()=>new Date().toISOString();
+const localDate=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const localDateTime=iso=>new Date(iso).toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'});
 const $=id=>document.getElementById(id);
-const fresh=()=>({stock:{gar:100,bot:0,hielo:0,nuevo:0},sales:[],expenses:[],reps:[],outs:[],cuts:[]});
+const fresh=()=>({stock:{gar:100,bot:0,hielo:0,nuevo:0},sales:[],expenses:[],reps:[],outs:[],cuts:[],days:[]});
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||fresh();
+// Compatibilidad con datos de versiones anteriores
+if(!db.stock)db.stock={gar:100,bot:0,hielo:0,nuevo:0};
+['sales','expenses','reps','outs','cuts','days'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[]});
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(x=>x.classList.remove('active'));let n=$('n-'+id);if(n)n.classList.add('active');render();if(id==='venta')calc();window.scrollTo(0,0)}
-function isToday(x){return x.date&&x.date.slice(0,10)===today()}
-function calc(){let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value;let price=p==='gar'?(t==='dist'?7:10):p==='bot'?5:p==='hielo'?40:100;let free=p==='gar'?Math.floor(q/15):0;let total=Math.max(0,(q-free)*price);$('total').textContent=money(total);let ef=Number($('efectivo').value)||0;$('cambio').textContent=money(Math.max(0,ef-total));$('promo').textContent=p==='gar'?`💧 15 + 1: ${free} garrafón(es) bonificado(s).`:'✨ Producto sin promoción.'}
-function vender(){let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value;let price=p==='gar'?(t==='dist'?7:10):p==='bot'?5:p==='hielo'?40:100;let free=p==='gar'?Math.floor(q/15):0,total=(q-free)*price,ef=Number($('efectivo').value)||0;if(q<1||ef<total)return alert('Revisa cantidad y efectivo.');db.sales.push({date:new Date().toISOString(),p,q,free,total,tipo:t==='dist'?'🚛 Distribuidor':'🏠 Público'});db.stock[p]=Math.max(0,(db.stock[p]||0)-q);save();alert('✅ Venta registrada');$('cantidad').value=1;$('efectivo').value=0;render();calc()}
-function salida(){let q=Number($('salida').value)||0;if(q<1)return alert('Captura la cantidad.');db.outs.push({date:new Date().toISOString(),q});save();alert('🚚 Salida registrada');$('salida').value=1;render()}
-function guardarReparto(){let a=Number($('r15').value)||0,t=Number($('r12').value)||0;if(a+t<1)return alert('Captura las ventas.');let cob=a*15+t*12,su=a*5+t*3;db.reps.push({date:new Date().toISOString(),a,t,v:a+t,cobrado:cob,sueldo:su,aqua:cob-su});db.stock.gar=Math.max(0,db.stock.gar-a-t);save();alert('✅ Reparto guardado');$('r15').value=0;$('r12').value=0;render()}
-function egreso(){let c=$('concepto').value.trim(),a=Number($('monto').value)||0;if(!c||a<=0)return alert('Escribe concepto y monto.');db.expenses.push({date:new Date().toISOString(),c,a});save();alert('💸 Egreso registrado');$('concepto').value='';$('monto').value='';render()}
-function corte(){let contado=Number($('contado').value)||0;let s=db.sales.filter(isToday).reduce((a,x)=>a+x.total,0),r=db.reps.filter(isToday).reduce((a,x)=>a+x.cobrado,0),e=db.expenses.filter(isToday).reduce((a,x)=>a+x.a,0),su=db.reps.filter(isToday).reduce((a,x)=>a+x.sueldo,0);let esperado=1000+s+r-e-su,dif=contado-esperado;db.cuts.push({date:new Date().toISOString(),contado,esperado,dif});save();$('diferencia').textContent=`${dif===0?'✅ Cuadra correctamente':dif>0?'🟢 Sobrante: '+money(dif):'🔴 Faltante: '+money(Math.abs(dif))}`;render()}
-function render(){let s=db.sales.filter(isToday),r=db.reps.filter(isToday),e=db.expenses.filter(isToday);let ventas=s.reduce((a,x)=>a+x.total,0)+r.reduce((a,x)=>a+x.cobrado,0),eg=e.reduce((a,x)=>a+x.a,0),su=r.reduce((a,x)=>a+x.sueldo,0),net=ventas-eg-su;
-$('vHoy').textContent=money(ventas);$('eHoy').textContent=money(eg);$('sHoy').textContent=money(su);$('nHoy').textContent=money(net);
-$('garHoy').textContent=s.filter(x=>x.p==='gar').reduce((a,x)=>a+x.q,0);$('botHoy').textContent=s.filter(x=>x.p==='bot').reduce((a,x)=>a+x.q,0);$('hieloHoy').textContent=s.filter(x=>x.p==='hielo').reduce((a,x)=>a+x.q,0);$('repGarHoy').textContent=r.reduce((a,x)=>a+x.v,0);
-$('stockLista').innerHTML=Object.entries({gar:'💧 Garrafones',bot:'🧴 Botellas 500 ml',hielo:'🧊 Bolsas de hielo',nuevo:'🫙 Garrafones nuevos'}).map(([k,n])=>`<div class="item"><span>${n}</span><b>${db.stock[k]||0}</b></div>`).join('');
-$('ventasLista').innerHTML=s.slice(-8).reverse().map(x=>`<div class="item"><span>${x.tipo} · ${x.p}</span><b>${money(x.total)}</b></div>`).join('')||'<div class="empty">Sin ventas hoy</div>';
-$('repartosLista').innerHTML=r.slice(-8).reverse().map(x=>`<div class="item"><span>🏠 ${x.a} · 🏪 ${x.t}</span><b>${money(x.cobrado)}</b></div>`).join('')||'<div class="empty">Sin repartos hoy</div>';
-$('egresosLista').innerHTML=e.slice(-10).reverse().map(x=>`<div class="item"><span>${x.c}</span><b>${money(x.a)}</b></div>`).join('')||'<div class="empty">Sin egresos hoy</div>';
-$('rv').textContent=r.reduce((a,x)=>a+x.v,0);$('rc').textContent=money(r.reduce((a,x)=>a+x.cobrado,0));$('rs').textContent=money(su);$('ra').textContent=money(r.reduce((a,x)=>a+x.aqua,0));
-$('cVentas').textContent=money(ventas);$('cEgresos').textContent=money(eg);$('cSueldo').textContent=money(su);$('cRetiro').textContent=money(Math.max(0,ventas-eg-su));
-$('reportesResumen').innerHTML=`<div class="item"><span>Ventas planta</span><b>${money(s.reduce((a,x)=>a+x.total,0))}</b></div><div class="item"><span>Ventas repartidor</span><b>${money(r.reduce((a,x)=>a+x.cobrado,0))}</b></div><div class="item"><span>Egresos</span><b>${money(eg)}</b></div><div class="item"><span>Sueldo repartidor</span><b>${money(su)}</b></div><div class="item"><span>Ganancia neta</span><b>${money(net)}</b></div>`;
-$('cantidades').innerHTML=`<div class="item"><span>💧 Garrafones planta</span><b>${s.filter(x=>x.p==='gar').reduce((a,x)=>a+x.q,0)}</b></div><div class="item"><span>🚚 Garrafones repartidor</span><b>${r.reduce((a,x)=>a+x.v,0)}</b></div><div class="item"><span>🧴 Botellas 500 ml</span><b>${s.filter(x=>x.p==='bot').reduce((a,x)=>a+x.q,0)}</b></div><div class="item"><span>🧊 Hielo</span><b>${s.filter(x=>x.p==='hielo').reduce((a,x)=>a+x.q,0)}</b></div><div class="item"><span>🫙 Garrafones nuevos</span><b>${s.filter(x=>x.p==='nuevo').reduce((a,x)=>a+x.q,0)}</b></div>`}
+function isToday(x){return x.date&&x.date.slice(0,10)===localDate()}
+function calc(){
+ let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value,cons=t==='dist'&&p==='gar'?Math.min(Number($('consumo').value)||0,q):0;
+ $('consumoBox').style.display=(t==='dist'&&p==='gar')?'block':'none';
+ let price=p==='gar'?(t==='dist'?7:10):p==='bot'?5:p==='hielo'?40:100;
+ let promo=p==='gar'?Math.floor(q/15):0;
+ let free=promo+cons;
+ let cobrables=Math.max(0,q-free);
+ let total=cobrables*price;
+ $('total').textContent=money(total);
+ let ef=Number($('efectivo').value)||0;$('cambio').textContent=money(Math.max(0,ef-total));
+ $('promo').textContent=p==='gar'?(t==='dist'?`💧 Promoción: ${promo} gratis por 15+1. 🏠 Consumo casa: ${cons}. Se cobran ${cobrables} de ${q}.`:`💧 Promoción: ${promo} garrafón(es) bonificado(s). Se cobran ${cobrables}.`):'✨ Producto sin promoción.';
+}
+function limpiarVenta(){ $('cantidad').value=1;$('consumo').value=0;$('efectivo').value=0;calc(); }
+function vender(){
+ let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value,cons=(t==='dist'&&p==='gar')?Math.min(Number($('consumo').value)||0,q):0;
+ let price=p==='gar'?(t==='dist'?7:10):p==='bot'?5:p==='hielo'?40:100;
+ let promo=p==='gar'?Math.floor(q/15):0;
+ // La promoción se RESTA: 15 llevados = 14 cobrados. El consumo de casa también se resta.
+ let free=promo+cons;
+ if(free>q)return alert('El consumo de casa y la promoción no pueden superar la cantidad que trae.');
+ let cobrables=q-free,total=cobrables*price,ef=Number($('efectivo').value)||0;
+ if(q<1||ef<total)return alert('Revisa cantidad y efectivo.');
+ if((db.stock[p]||0)<q)return alert(`No hay suficiente existencia. Disponible: ${db.stock[p]||0}.`);
+ db.sales.push({date:nowISO(),p,q,promo,consumo:cons,free,cobrables,total,tipo:t==='dist'?'🚛 Distribuidor':'🏠 Público',existenciaAntes:db.stock[p]||0,existenciaDespues:Math.max(0,(db.stock[p]||0)-q)});
+ db.stock[p]=Math.max(0,(db.stock[p]||0)-q);save();alert(`✅ Venta registrada\n${q} llevados · ${cobrables} cobrados · ${free} gratis`);limpiarVenta();render();
+}
+function salida(){let q=Number($('salida').value)||0;if(q<1)return alert('Captura la cantidad.');if((db.stock.gar||0)<q)return alert(`No hay suficientes garrafones. Disponible: ${db.stock.gar||0}.`);db.outs.push({date:nowISO(),q,existencia:db.stock.gar||0});save();alert('🚚 Salida registrada. La existencia se descuenta cuando se registre la venta.');$('salida').value=1;render()}
+function guardarReparto(){let a=Number($('r15').value)||0,t=Number($('r12').value)||0;if(a+t<1)return alert('Captura las ventas.');if((db.stock.gar||0)<a+t)return alert(`No hay suficientes garrafones. Disponible: ${db.stock.gar||0}.`);let cob=a*15+t*12,su=a*5+t*3;db.reps.push({date:nowISO(),a,t,v:a+t,cobrado:cob,sueldo:su,aqua:cob-su,existenciaAntes:db.stock.gar||0,existenciaDespues:Math.max(0,(db.stock.gar||0)-a-t)});db.stock.gar=Math.max(0,db.stock.gar-a-t);save();alert('✅ Reparto guardado');$('r15').value=0;$('r12').value=0;render()}
+function egreso(){let c=$('concepto').value.trim(),a=Number($('monto').value)||0;if(!c||a<=0)return alert('Escribe concepto y monto.');db.expenses.push({date:nowISO(),c,a});save();alert('💸 Egreso registrado');$('concepto').value='';$('monto').value='';render()}
+function corte(){let contado=Number($('contado').value)||0;let s=db.sales.filter(isToday).reduce((a,x)=>a+x.total,0),r=db.reps.filter(isToday).reduce((a,x)=>a+x.cobrado,0),e=db.expenses.filter(isToday).reduce((a,x)=>a+x.a,0),su=db.reps.filter(isToday).reduce((a,x)=>a+x.sueldo,0);let esperado=1000+s+r-e-su,dif=contado-esperado;db.cuts.push({date:nowISO(),contado,esperado,dif});save();$('diferencia').textContent=`${dif===0?'✅ Cuadra correctamente':dif>0?'🟢 Sobrante: '+money(dif):'🔴 Faltante: '+money(Math.abs(dif))}`;render()}
+function cerrarDia(){
+ const d=localDate();
+ if(db.days.some(x=>x.date===d)){return alert('🌙 Este día ya está cerrado.');}
+ const s=db.sales.filter(x=>x.date?.slice(0,10)===d),r=db.reps.filter(x=>x.date?.slice(0,10)===d),e=db.expenses.filter(x=>x.date?.slice(0,10)===d),c=db.cuts.filter(x=>x.date?.slice(0,10)===d).slice(-1)[0];
+ const ventas=s.reduce((a,x)=>a+x.total,0)+r.reduce((a,x)=>a+x.cobrado,0),eg=e.reduce((a,x)=>a+x.a,0),su=r.reduce((a,x)=>a+x.sueldo,0);
+ db.days.push({date:d,closedAt:nowISO(),ventas,egresos:eg,sueldo:su,ganancia:ventas-eg-su,corte:c?c.contado:null});save();render();alert(`🌙 Día ${d} cerrado.\nTodo quedó guardado en el historial.\nEl inventario se conserva para el siguiente día.`);
+}
+function render(){
+ let s=db.sales.filter(isToday),r=db.reps.filter(isToday),e=db.expenses.filter(isToday);
+ let ventas=s.reduce((a,x)=>a+x.total,0)+r.reduce((a,x)=>a+x.cobrado,0),eg=e.reduce((a,x)=>a+x.a,0),su=r.reduce((a,x)=>a+x.sueldo,0),net=ventas-eg-su;
+ $('vHoy').textContent=money(ventas);$('eHoy').textContent=money(eg);$('sHoy').textContent=money(su);$('nHoy').textContent=money(net);
+ $('garHoy').textContent=s.filter(x=>x.p==='gar').reduce((a,x)=>a+x.q,0);$('botHoy').textContent=s.filter(x=>x.p==='bot').reduce((a,x)=>a+x.q,0);$('hieloHoy').textContent=s.filter(x=>x.p==='hielo').reduce((a,x)=>a+x.q,0);$('repGarHoy').textContent=r.reduce((a,x)=>a+x.v,0);
+ $('stockLista').innerHTML=Object.entries({gar:'💧 Garrafones',bot:'🧴 Botellas 500 ml',hielo:'🧊 Bolsas de hielo',nuevo:'🫙 Garrafones nuevos'}).map(([k,n])=>`<div class="item"><span>${n}</span><b>Existencia: ${db.stock[k]||0}</b></div>`).join('');
+ $('ventasLista').innerHTML=s.slice(-8).reverse().map(x=>`<div class="item"><span>${x.tipo} · ${x.p}<br><small>${localDateTime(x.date)} · ${x.q} llevados · ${x.cobrables} cobrados${x.consumo?' · '+x.consumo+' consumo':''}</small></span><b>${money(x.total)}</b></div>`).join('')||'<div class="empty">Sin ventas hoy</div>';
+ $('repartosLista').innerHTML=r.slice(-8).reverse().map(x=>`<div class="item"><span>🏠 ${x.a} · 🏪 ${x.t}<br><small>${localDateTime(x.date)}</small></span><b>${money(x.cobrado)}</b></div>`).join('')||'<div class="empty">Sin repartos hoy</div>';
+ $('egresosLista').innerHTML=e.slice(-10).reverse().map(x=>`<div class="item"><span>${x.c}<br><small>${localDateTime(x.date)}</small></span><b>${money(x.a)}</b></div>`).join('')||'<div class="empty">Sin egresos hoy</div>';
+ $('rv').textContent=r.reduce((a,x)=>a+x.v,0);$('rc').textContent=money(r.reduce((a,x)=>a+x.cobrado,0));$('rs').textContent=money(su);$('ra').textContent=money(r.reduce((a,x)=>a+x.aqua,0));
+ $('cVentas').textContent=money(ventas);$('cEgresos').textContent=money(eg);$('cSueldo').textContent=money(su);$('cRetiro').textContent=money(Math.max(0,ventas-eg-su));
+ $('reportesResumen').innerHTML=`<div class="item"><span>Ventas planta</span><b>${money(s.reduce((a,x)=>a+x.total,0))}</b></div><div class="item"><span>Ventas repartidor</span><b>${money(r.reduce((a,x)=>a+x.cobrado,0))}</b></div><div class="item"><span>Egresos</span><b>${money(eg)}</b></div><div class="item"><span>Sueldo repartidor</span><b>${money(su)}</b></div><div class="item"><span>Ganancia neta</span><b>${money(net)}</b></div>`;
+ $('cantidades').innerHTML=`<div class="item"><span>💧 Garrafones planta</span><b>${s.filter(x=>x.p==='gar').reduce((a,x)=>a+x.q,0)}</b></div><div class="item"><span>🚚 Garrafones repartidor</span><b>${r.reduce((a,x)=>a+x.v,0)}</b></div><div class="item"><span>🧴 Botellas 500 ml</span><b>${s.filter(x=>x.p==='bot').reduce((a,x)=>a+x.q,0)}</b></div><div class="item"><span>🧊 Hielo</span><b>${s.filter(x=>x.p==='hielo').reduce((a,x)=>a+x.q,0)}</b></div><div class="item"><span>🫙 Garrafones nuevos</span><b>${s.filter(x=>x.p==='nuevo').reduce((a,x)=>a+x.q,0)}</b></div>`;
+ $('historialDias').innerHTML=db.days.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<div class="item"><span>📅 ${x.date}<br><small>Cerrado: ${localDateTime(x.closedAt)}${x.corte!==null?' · Corte: '+money(x.corte):''}</small></span><b>${money(x.ganancia)}</b></div>`).join('')||'<div class="empty">Todavía no hay días cerrados.</div>';
+}
 function borrarTodo(){if(confirm('¿Borrar todos los datos? Esta acción no se puede deshacer.')){db=fresh();save();render();alert('Datos borrados.')}}
-['cantidad','efectivo','tipo','producto'].forEach(id=>$(id).addEventListener('input',calc));
+['cantidad','efectivo','tipo','producto','consumo'].forEach(id=>$(id).addEventListener('input',calc));
 $('n-inicio').classList.add('active');render();calc();
 </script>
 </body>
