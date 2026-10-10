@@ -3,25 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#075985">
+<meta name="theme-color" content="#061a2b">
 <title>AquaClyva POS · San Miguel</title>
 <style>
-:root{--nav:#063451;--blue:#0878c9;--cyan:#21b8dc;--bg:#f3f7fa;--card:#fff;--text:#122536;--muted:#71818e;--line:#dbe7ee;--ok:#119b6d;--bad:#d9535f;--shadow:0 12px 30px rgba(8,65,100,.10)}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#eaf8fd,#f5f8fb 45%,#edf4f8);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);padding-bottom:82px}
+:root{--nav:#071d33;--blue:#0878c9;--cyan:#21b8dc;--bg:#071d33;--card:#102c46;--text:#edf6ff;--muted:#a9bfd1;--line:#24445f;--ok:#119b6d;--bad:#d9535f;--shadow:0 10px 28px rgba(0,0,0,.22)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#061525 0%,#082844 55%,#061a2b 100%);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);padding-bottom:100px}
 header{background:linear-gradient(135deg,#042b49,#075986,#0a93cc);color:#fff;padding:20px 16px;position:sticky;top:0;z-index:10;box-shadow:0 8px 25px #04304a44}
 .title{font-size:29px;font-weight:900;letter-spacing:-1px}.sub{font-size:11px;letter-spacing:1px;opacity:.85;margin-top:3px}
 main{max-width:980px;margin:auto;padding:15px}.screen{display:none}.screen.active{display:block}
-h1{font-size:22px;margin:5px 0 15px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow)}
+h1{font-size:23px;letter-spacing:-.45px;margin:7px 0 17px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:linear-gradient(145deg,#12334f,#0d263e);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:var(--shadow)}
 .label{font-size:12px;color:var(--muted);margin-bottom:5px}.kpi{font-size:27px;font-weight:900;color:var(--nav)}
-.big,button{border:0;border-radius:16px;padding:15px;font:inherit;font-weight:800;cursor:pointer;box-shadow:0 7px 18px #073b5518}
-.big{background:linear-gradient(145deg,#fff,#eef8fc);border:1px solid #d3e8f0;text-align:left;color:var(--nav)}.big span{display:block;font-size:11px;color:var(--muted);margin-top:4px}
-button.ok{background:linear-gradient(135deg,#078bc1,#075985);color:white}.secondary{background:#e8f6fb;color:#075985}.danger{background:#fff0f1;color:#b32f3c}
-input,select{width:100%;padding:13px;border:1px solid #cbdbe4;border-radius:13px;background:#fbfdfe;font-size:16px;outline:0}
+.big,button{border:0;border-radius:15px;padding:14px;font:inherit;font-weight:750;cursor:pointer;box-shadow:0 5px 14px #073b5514;transition:transform .12s ease,box-shadow .12s ease}.big:active,button:active{transform:scale(.985)}
+.big{background:linear-gradient(145deg,#123b5b,#0c2a43);border:1px solid #28516f;text-align:left;color:#f1f8ff}.big span{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+button.ok{background:linear-gradient(135deg,#079bd0,#075985);color:white}.secondary{background:#173e5d;color:#d8f1ff}.danger{background:#542632;color:#ffdce1}
+input,select{width:100%;padding:13px;border:1px solid #31516a;border-radius:13px;background:#0a2035;color:#f1f8ff;font-size:16px;outline:0}
 input:focus,select:focus{border-color:#22acd3;box-shadow:0 0 0 4px #22acd322}.form{display:grid;gap:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row{display:flex;gap:10px;align-items:end}.row>*{flex:1}
-.total{font-size:35px;font-weight:950;color:var(--nav)}.notice{background:#eaf8fd;border:1px solid #cceaf4;border-radius:14px;padding:11px;color:#155674;font-size:13px}
+.total{font-size:35px;font-weight:950;color:#5bd3ff}.notice{background:#103b57;border:1px solid #28617e;border-radius:14px;padding:11px;color:#d6f3ff;font-size:13px}
 .item{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}.empty{text-align:center;color:var(--muted);padding:20px}
-.bottom{position:fixed;bottom:0;left:0;right:0;background:#ffffffee;backdrop-filter:blur(15px);border-top:1px solid #d8e5ec;display:grid;grid-template-columns:repeat(5,1fr);padding:7px;z-index:20}.bottom button{background:transparent;color:#637682;box-shadow:none;padding:8px 2px;font-size:10px}.bottom button.active{background:#e8f6fb;color:#0878c9}.ico{display:block;font-size:20px;margin-bottom:2px}
-@media(min-width:720px){.grid{grid-template-columns:repeat(4,1fr)}.bottom{max-width:980px;left:50%;transform:translateX(-50%);border-radius:18px 18px 0 0}}
+.bottom{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#071a2c;border-top:1px solid #24445f;box-shadow:0 -8px 28px rgba(0,0,0,.28);z-index:20}.bottom button{min-width:0;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:transparent;color:#9db4c7;box-shadow:none;border-radius:14px;padding:6px 2px;font-size:11px;line-height:1.1;white-space:nowrap;text-align:center;margin:0 auto;width:100%}.bottom button.active{background:linear-gradient(135deg,#12486a,#0d3452);color:#63d5ff;box-shadow:inset 0 0 0 1px #28617e}.ico{display:block;font-size:20px;line-height:1;margin:0}.bottom button:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
+@media(min-width:720px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.bottom{max-width:620px;left:50%;right:auto;width:calc(100% - 32px);transform:translateX(-50%);border:1px solid #d8e5ec;border-bottom:0;border-radius:20px 20px 0 0;padding-left:12px;padding-right:12px}}
+@media(max-width:360px){.bottom{padding-left:5px;padding-right:5px;gap:2px}.bottom button{font-size:10px}}
+
+/* Ajuste solicitado: tipografía blanca de alto contraste en toda la interfaz */
+:root{--text:#ffffff;--muted:#ffffff}
+body,main,section,h1,h2,h3,p,label,small,strong,span,div{color:#ffffff}
+.kpi,.label,.big span,.empty,.item,.sub{color:#ffffff}
+button,.bottom button,.bottom button.active,.secondary,.danger,.notice{color:#ffffff}
+input,select,textarea,input::placeholder,textarea::placeholder{color:#ffffff}
+option{background:#0a2035;color:#ffffff}
+.bottom button.active{color:#ffffff}
 </style>
 </head>
 <body>
@@ -53,7 +63,7 @@ input:focus,select:focus{border-color:#22acd3;box-shadow:0 0 0 4px #22acd322}.fo
 <section id="venta" class="screen">
 <h1>💰 Nueva venta</h1>
 <div class="card form">
-<div class="two"><div><div class="label">Tipo de cliente</div><select id="tipo"><option value="publico">🏠 Público · $10</option><option value="dist">🚛 Distribuidor · $7</option></select></div>
+<div class="two"><div><div class="label">Tipo de cliente</div><select id="tipo"><option value="publico">🏠 Público · $10</option><option value="dist">🚛 Distribuidor · $7</option><option value="casa">🏡 Consumo de su casa · $0</option></select></div>
 <div><div class="label">Producto</div><select id="producto"><option value="gar">💧 Garrafón relleno</option><option value="bot">🧴 Botella 500 ml</option><option value="hielo">🧊 Bolsa de hielo</option><option value="nuevo">🫙 Garrafón nuevo</option></select></div></div>
 <div><div class="label">Cantidad</div><input id="cantidad" type="number" min="1" value="1"></div>
 <div id="promo" class="notice">💧 Promoción 15 + 1 en garrafones.</div>
@@ -95,8 +105,9 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||fresh();
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(x=>x.classList.remove('active'));let n=$('n-'+id);if(n)n.classList.add('active');render();if(id==='venta')calc();window.scrollTo(0,0)}
 function isToday(x){return x.date&&x.date.slice(0,10)===today()}
-function calc(){let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value;let price=p==='gar'?(t==='dist'?7:10):p==='bot'?5:p==='hielo'?40:100;let free=p==='gar'?Math.floor(q/15):0;let total=Math.max(0,(q-free)*price);$('total').textContent=money(total);let ef=Number($('efectivo').value)||0;$('cambio').textContent=money(Math.max(0,ef-total));$('promo').textContent=p==='gar'?`💧 15 + 1: ${free} garrafón(es) bonificado(s).`:'✨ Producto sin promoción.'}
-function vender(){let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value;let price=p==='gar'?(t==='dist'?7:10):p==='bot'?5:p==='hielo'?40:100;let free=p==='gar'?Math.floor(q/15):0,total=(q-free)*price,ef=Number($('efectivo').value)||0;if(q<1||ef<total)return alert('Revisa cantidad y efectivo.');db.sales.push({date:new Date().toISOString(),p,q,free,total,tipo:t==='dist'?'🚛 Distribuidor':'🏠 Público'});save();alert('✅ Venta registrada');$('cantidad').value=1;$('efectivo').value=0;render();calc()}
+function promoPrev(){return db.sales.filter(x=>x.p==='gar'&&(x.tipo==='🚛 Distribuidor'||x.tipo==='🏡 Consumo de su casa')).reduce((a,x)=>a+(Number(x.q)||0),0)}
+function calc(){let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value;let price=p==='gar'?(t==='dist'?7:t==='casa'?0:10):p==='bot'?5:p==='hielo'?40:100;let prev=(p==='gar'&&(t==='dist'||t==='casa'))?promoPrev():0;let free=p==='gar'?(t==='dist'||t==='casa'?Math.floor((prev+q)/15)-Math.floor(prev/15):Math.floor(q/15)):0;let total=Math.max(0,(q-free)*price);$('total').textContent=money(total);let ef=Number($('efectivo').value)||0;$('cambio').textContent=money(Math.max(0,ef-total));$('promo').textContent=p==='gar'?`💧 Promoción 15 + 1: ${free} garrafón(es) bonificado(s) en esta operación. Distribuidor + consumo de casa cuentan juntos (${prev+q} acumulados).`:'✨ Producto sin promoción.'}
+function vender(){let p=$('producto').value,q=Number($('cantidad').value)||0,t=$('tipo').value;let price=p==='gar'?(t==='dist'?7:t==='casa'?0:10):p==='bot'?5:p==='hielo'?40:100;let prev=(p==='gar'&&(t==='dist'||t==='casa'))?promoPrev():0;let free=p==='gar'?(t==='dist'||t==='casa'?Math.floor((prev+q)/15)-Math.floor(prev/15):Math.floor(q/15)):0;let total=(q-free)*price,ef=Number($('efectivo').value)||0;if(q<1||ef<total)return alert('Revisa cantidad y efectivo.');let tipo=t==='dist'?'🚛 Distribuidor':t==='casa'?'🏡 Consumo de su casa':'🏠 Público';db.sales.push({date:new Date().toISOString(),p,q,free,total,tipo});save();alert('✅ Venta registrada');$('cantidad').value=1;$('efectivo').value=0;render();calc()}
 function salida(){let q=Number($('salida').value)||0;if(q<1)return alert('Captura la cantidad.');db.outs.push({date:new Date().toISOString(),q});save();alert('🚚 Salida registrada');$('salida').value=1;render()}
 function guardarReparto(){let a=Number($('r15').value)||0,t=Number($('r12').value)||0;if(a+t<1)return alert('Captura las ventas.');let cob=a*15+t*12,su=a*5+t*3;db.reps.push({date:new Date().toISOString(),a,t,v:a+t,cobrado:cob,sueldo:su,aqua:cob-su});save();alert('✅ Reparto guardado');$('r15').value=0;$('r12').value=0;render()}
 function egreso(){let c=$('concepto').value.trim(),a=Number($('monto').value)||0;if(!c||a<=0)return alert('Escribe concepto y monto.');db.expenses.push({date:new Date().toISOString(),c,a});save();alert('💸 Egreso registrado');$('concepto').value='';$('monto').value='';render()}
